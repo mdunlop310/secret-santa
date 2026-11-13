@@ -159,7 +159,8 @@ class TestReminderLinks:
         g = make_group()
         join(client, outbox, g.invite, "Alex", "alex@example.com")
         outbox.outbox.clear()
-        run(db, outbox, datetime.now(UTC) + timedelta(days=4))
+        # Midday, so the daily reminders run whatever time the test itself runs.
+        run(db, outbox, (datetime.now(UTC) + timedelta(days=5)).replace(hour=12))
         nudges = [m for m in outbox.outbox if "Add your wish list" in m.subject]
         assert nudges, [m.subject for m in outbox.outbox]
         for message in nudges:
