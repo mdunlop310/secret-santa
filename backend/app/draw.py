@@ -94,6 +94,6 @@ def notify_draw(
             unsubscribe_links("p", p.id),
         )
         for p in group.participants
-        if p.id not in skip
+        if p.id not in skip and p.email
     ]
     send_many_safely(sender, messages)

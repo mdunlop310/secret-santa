@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     rate_limit_email_send: int = 20
     rate_limit_link_preview: int = 60
     rate_limit_draw: int = 10
+    rate_limit_codeword: int = 60
     # How many reverse proxies sit in front of the API (1 on Render). The client IP for
     # rate limits is read that many entries from the right of X-Forwarded-For, so a
     # client can't dodge limits by sending its own header. 0 trusts no header.

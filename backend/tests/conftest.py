@@ -1,3 +1,4 @@
+import itertools
 import os
 import re
 from collections.abc import Iterator
@@ -66,8 +67,12 @@ def future(days: int = 49) -> str:
     return (date.today() + timedelta(days=days)).isoformat()
 
 
+_codewords = itertools.count(1)
+
+
 def group_payload(**overrides) -> dict:
     payload = {
+        "codeword": f"jingle {next(_codewords)}",
         "name": "Family Secret Santa",
         "gift_date": future(),
         "budget_min": 1500,

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
+from app.codeword import codeword_key
 from app.config import get_settings
 from app.draw import check_can_draw, check_draw_rate, notify_draw, run_draw
 from app.email import EmailSender, get_email_sender, send_safely, templates
@@ -24,9 +25,11 @@ from app.security import AdminGroup as AdminGroupDep
 from app.services import (
     MAX_PARTICIPANTS,
     admin_link,
+    codeword_taken,
     exclusion_pair_count,
     group_public,
     invite_link,
+    name_taken,
     participant_link,
     participant_status,
     participant_summaries,
@@ -36,6 +39,8 @@ from app.unsubscribe import links as unsubscribe_links
 router = APIRouter()
 
 Sender = Annotated[EmailSender, Depends(get_email_sender)]
+
+CODEWORD_TAKEN = HTTPException(status.HTTP_409_CONFLICT, "That codeword is taken. Try another.")
 
 
 def _check_group_rate(db: DB, request: Request) -> None:
@@ -52,6 +57,9 @@ def check_email_rate(db: DB, request: Request, email: str) -> None:
 def create_group(body: GroupCreate, request: Request, db: DB, sender: Sender) -> GroupCreated:
     _check_group_rate(db, request)
     check_email_rate(db, request, body.admin_email)
+    key = codeword_key(body.codeword)
+    if codeword_taken(db, key):
+        raise CODEWORD_TAKEN
 
     admin_token = new_token()
     group = Group(
@@ -64,6 +72,8 @@ def create_group(body: GroupCreate, request: Request, db: DB, sender: Sender) ->
         admin_email=body.admin_email,
         admin_token_hash=hash_token(admin_token),
         invite_token=new_token(),
+        codeword=body.codeword,
+        codeword_key=key,
     )
     if body.admin_participates:
         # The organiser uses their admin link for their own wish list too. Their
@@ -78,7 +88,11 @@ def create_group(body: GroupCreate, request: Request, db: DB, sender: Sender) ->
             )
         )
     db.add(group)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:  # someone took the codeword a moment ago
+        db.rollback()
+        raise CODEWORD_TAKEN from exc
 
     links = GroupCreated(
         group_id=group.id,
@@ -98,6 +112,7 @@ def create_group(body: GroupCreate, request: Request, db: DB, sender: Sender) ->
 def get_admin_group(group: AdminGroupDep, db: DB) -> AdminGroup:
     return AdminGroup(
         **group_public(group).model_dump(),
+        codeword=group.codeword,
         invite_link=invite_link(group),
         drawn_at=group.drawn_at,
         show_exclusions=group.show_exclusions,
@@ -135,6 +150,13 @@ def update_group(group_id: int, body: GroupUpdate, member: Member, db: DB) -> Gr
         )
     if "message" in changes:
         changes["message"] = changes["message"] or None
+    if changes.get("codeword") is not None:
+        key = codeword_key(changes["codeword"])
+        if codeword_taken(db, key, group.id):
+            raise CODEWORD_TAKEN
+        changes["codeword_key"] = key
+    else:
+        changes.pop("codeword", None)
     for field, value in changes.items():
         setattr(group, field, value)
     db.commit()
@@ -162,14 +184,16 @@ def add_participant(
     count = db.scalar(select(func.count()).where(Participant.group_id == group.id))
     if count >= MAX_PARTICIPANTS:
         raise HTTPException(status.HTTP_409_CONFLICT, "This group is full")
-    check_email_rate(db, request, body.email)
-
-    if db.scalar(
-        select(Participant.id).where(
-            Participant.group_id == group.id, Participant.email == body.email
-        )
-    ):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Someone with that email is already in")
+    if name_taken(db, group, body.name):
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{body.name} is already in")
+    if body.email is not None:
+        check_email_rate(db, request, body.email)
+        if db.scalar(
+            select(Participant.id).where(
+                Participant.group_id == group.id, Participant.email == body.email
+            )
+        ):
+            raise HTTPException(status.HTTP_409_CONFLICT, "Someone with that email is already in")
     if drawn:
         check_draw_rate(db, group)
 
@@ -190,16 +214,17 @@ def add_participant(
     except Exception:
         db.rollback()
         raise
-    send_safely(
-        sender,
-        templates.invited_by_admin(
-            group,
-            body.name,
-            body.email,
-            participant_link(token),
-            unsubscribe_links("p", participant.id),
-        ),
-    )
+    if body.email is not None:
+        send_safely(
+            sender,
+            templates.invited_by_admin(
+                group,
+                body.name,
+                body.email,
+                participant_link(token),
+                unsubscribe_links("p", participant.id),
+            ),
+        )
     if drawn:
         notify_draw(sender, group, redraw=True, skip={participant.id})
     return ParticipantSummary(

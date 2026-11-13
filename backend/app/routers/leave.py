@@ -23,6 +23,11 @@ def leave(participant: OwnParticipant, db: DB, sender: Sender) -> None:
     Leaving can't be blocked by the draw. Before the gift date we redraw for everyone
     else; if that's impossible the draw is cleared and the admin is told.
     """
+    if participant.is_admin:
+        # Picking the organiser's name with the codeword gives a participant link to
+        # their record, but only the organiser's own link can remove them (by deleting
+        # the group).
+        raise HTTPException(409, "The organiser can't leave. Delete the group instead.")
     group = participant.group
     name = participant.name
     drawn = group.draw_status == "drawn"

@@ -125,7 +125,7 @@ def send_wishlist_changes(db: Session, sender: EmailSender, now: datetime, repor
                 Assignment.giftee_id == reminder.participant_id,
             )
         )
-        if group is None or giver is None or giver.unsubscribed_at is not None:
+        if group is None or giver is None or not giver.email or giver.unsubscribed_at is not None:
             continue
         message = templates.wishlist_changed(
             group,
@@ -158,7 +158,7 @@ def send_daily(db: Session, sender: EmailSender, now: datetime, report: Report) 
                 report.count("draw_pending")
 
         for p in group.participants:
-            if p.unsubscribed_at is not None:
+            if not p.email or p.unsubscribed_at is not None:
                 continue
             unsub = unsubscribe_links("p", p.id)
 

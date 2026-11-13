@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.access import open_link, until_group_deleted
@@ -82,3 +82,24 @@ def member_open_link(participant: Participant, to: Destination = "wishlist") -> 
         return admin_open_link(participant.group, to)
     expires = until_group_deleted(participant.group.gift_date)
     return f"{open_link('p', participant.id, expires)}?to={to}"
+
+
+def name_taken(db: Session, group: Group, name: str) -> bool:
+    """Names are how people pick themselves after entering the codeword, so they must
+    be unique within a group (ignoring case)."""
+    return (
+        db.scalar(
+            select(Participant.id).where(
+                Participant.group_id == group.id,
+                func.lower(Participant.name) == name.lower(),
+            )
+        )
+        is not None
+    )
+
+
+def codeword_taken(db: Session, key: str, group_id: int | None = None) -> bool:
+    query = select(Group.id).where(Group.codeword_key == key)
+    if group_id is not None:
+        query = query.where(Group.id != group_id)
+    return db.scalar(query) is not None

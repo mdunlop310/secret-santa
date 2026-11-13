@@ -12,6 +12,7 @@ from pydantic import (
     model_validator,
 )
 
+from app.codeword import MIN_KEY_LENGTH, codeword_key
 from app.linkpreview import is_safe_image_url
 
 MAX_BUDGET_PENCE = 1_000_000  # £10,000
@@ -21,6 +22,19 @@ GroupName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1
 Message = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
 Pence = Annotated[int, Field(ge=0, le=MAX_BUDGET_PENCE)]
 Email = Annotated[EmailStr, AfterValidator(str.lower)]
+
+
+def _codeword(value: str) -> str:
+    if len(codeword_key(value)) < MIN_KEY_LENGTH:
+        raise ValueError(f"Use at least {MIN_KEY_LENGTH} letters or numbers")
+    return value
+
+
+Codeword = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=40),
+    AfterValidator(_codeword),
+]
 
 
 def _not_in_past(value: date) -> date:
@@ -57,6 +71,7 @@ class GroupCreate(BudgetMixin, StrictModel):
     budget_min: Pence
     budget_max: Pence
     message: Message | None = None
+    codeword: Codeword
     admin_name: Name
     admin_email: Email
     admin_participates: bool = True
@@ -74,6 +89,7 @@ class GroupUpdate(BudgetMixin, StrictModel):
     budget_min: Pence | None = None
     budget_max: Pence | None = None
     message: Message | None = None
+    codeword: Codeword | None = None
     show_exclusions: bool | None = None
 
 
@@ -102,6 +118,7 @@ class ParticipantSummary(BaseModel):
 
 
 class AdminGroup(GroupPublic):
+    codeword: str
     invite_link: str
     drawn_at: datetime | None
     show_exclusions: bool
@@ -120,7 +137,31 @@ class InvitePreview(BaseModel):
 
 class JoinRequest(StrictModel):
     name: Name
-    email: Email
+    email: Email | None = None
+
+
+class EnterRequest(StrictModel):
+    codeword: str = Field(max_length=40)
+
+
+class PickRequest(EnterRequest):
+    participant_id: int
+
+
+class CodewordJoinRequest(EnterRequest):
+    name: Name
+    email: Email | None = None
+
+
+class EnteredGroup(InvitePreview):
+    """What someone holding the codeword sees: the group and everyone's names."""
+
+    draw_status: str
+    people: list["PersonRef"]
+
+
+class EnteredLink(BaseModel):
+    link: str
 
 
 class JoinResult(BaseModel):
@@ -139,7 +180,7 @@ class OpenedLink(BaseModel):
 
 class AddParticipant(StrictModel):
     name: Name
-    email: Email
+    email: Email | None = None
     confirm_redraw: bool = False
 
 
@@ -282,3 +323,6 @@ class GifteeOut(BaseModel):
 class GifteeResponse(BaseModel):
     drawn: bool
     giftee: GifteeOut | None = None
+
+
+EnteredGroup.model_rebuild()

@@ -38,6 +38,9 @@ class Group(Base):
     admin_email: Mapped[str] = mapped_column(String(254))
     admin_token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     invite_token: Mapped[str] = mapped_column(String(64), unique=True)
+    # What the organiser shares with friends, as typed, and its normalised form for lookup.
+    codeword: Mapped[str] = mapped_column(String(40))
+    codeword_key: Mapped[str] = mapped_column(String(40), unique=True)
     show_exclusions: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     draw_status: Mapped[str] = mapped_column(
         String(16), default="not_drawn", server_default="not_drawn"
@@ -60,7 +63,7 @@ class Participant(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(60))
-    email: Mapped[str] = mapped_column(String(254))
+    email: Mapped[str | None] = mapped_column(String(254))  # optional: only for emails
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     secret_surprise: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

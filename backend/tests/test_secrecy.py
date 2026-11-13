@@ -33,6 +33,9 @@ ROUTES = {
     ("POST", "/groups/{group_id}/regenerate-admin-link"): {"skip_auth_matrix": True},
     ("GET", "/join/{invite_token}"): {},
     ("POST", "/join/{invite_token}"): {"skip_auth_matrix": True},  # adds a person
+    ("POST", "/enter"): {"json": {"codeword": "not-this-one"}},
+    ("POST", "/enter/pick"): {"json": {"codeword": "not-this-one", "participant_id": 1}},
+    ("POST", "/enter/join"): {"skip_auth_matrix": True},  # adds a person
     ("POST", "/links/open/{token}"): {},
     ("POST", "/links/lost"): {"json": {"email": "nobody@example.com"}},
     ("GET", "/me"): {},
