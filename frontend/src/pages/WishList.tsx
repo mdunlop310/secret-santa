@@ -211,7 +211,7 @@ export function WishListPage() {
                 onSave={(input) => addItem.mutateAsync(input)}
               />
             )}
-            {!organiser && (
+            {!organiser && !me.is_admin && (
               <button type="button" className="link-btn link-btn--danger" style={{ alignSelf: 'center' }} onClick={() => setLeaving(true)}>
                 Leave this Secret Santa
               </button>

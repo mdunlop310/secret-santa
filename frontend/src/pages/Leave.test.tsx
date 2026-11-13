@@ -76,6 +76,7 @@ const group: AdminGroup = {
   admin_name: 'Sam',
   draw_status: 'not_drawn',
   days_to_go: 48,
+  codeword: 'jingle bells',
   invite_link: 'http://localhost:5173/join/INV',
   drawn_at: null,
   show_exclusions: false,

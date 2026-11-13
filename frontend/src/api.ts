@@ -75,6 +75,7 @@ export type ParticipantSummary = {
 }
 
 export type AdminGroup = GroupPublic & {
+  codeword: string
   invite_link: string
   drawn_at: string | null
   show_exclusions: boolean
@@ -88,6 +89,7 @@ export type GroupCreate = {
   budget_min: number
   budget_max: number
   message: string | null
+  codeword: string
   admin_name: string
   admin_email: string
   admin_participates: boolean
@@ -103,6 +105,14 @@ export type GroupCreated = {
 export type JoinResult = { status: 'joined' | 'sent'; participant_link: string | null }
 
 export type OpenedLink = { kind: 'admin' | 'participant'; link: string }
+
+/** What the group's codeword opens: the group and everyone's names, nothing more. */
+export type EnteredGroup = InvitePreview & {
+  draw_status: 'not_drawn' | 'drawn'
+  people: { id: number; name: string }[]
+}
+
+export type EnteredLink = { link: string }
 
 export type InvitePreview = {
   group_name: string

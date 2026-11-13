@@ -18,6 +18,7 @@ const baseGroup: AdminGroup = {
   admin_name: 'Sam',
   draw_status: 'not_drawn',
   days_to_go: 48,
+  codeword: 'jingle bells',
   invite_link: 'http://localhost:5173/join/INV',
   drawn_at: null,
   show_exclusions: false,
@@ -115,7 +116,7 @@ describe('Dashboard draw', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Edit people' }))
     const form = screen.getByRole('form', { name: 'Add someone' })
     await userEvent.type(within(form).getByLabelText('Name'), 'Jo')
-    await userEvent.type(within(form).getByLabelText('Email'), 'jo@example.com')
+    await userEvent.type(within(form).getByLabelText('Email (optional)'), 'jo@example.com')
     await userEvent.click(within(form).getByRole('button', { name: 'Add' }))
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/participants'))).toBe(true))
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()

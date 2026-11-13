@@ -4,7 +4,7 @@ Last updated 1 Nov 2026.
 
 ## Overview
 
-A free, ad-free web app that lets a group of friends or family run a Secret Santa: the organiser sets a budget and exclusions, everyone joins by invite link (no account), the app draws names, and each person's wish list is visible only to their Secret Santa.
+A free, ad-free web app that lets a group of friends or family run a Secret Santa: the organiser sets a budget and exclusions, everyone gets in with the group's codeword and taps their name (no account), the app draws names, and each person's wish list is visible only to their Secret Santa.
 
 **Goals**
 
@@ -40,7 +40,7 @@ Two roles, both without accounts: the **admin** (creates the group, holds a priv
 
 **Participant flow**
 
-1. Open the invite link, enter name and email, receive a personal magic link by email
+1. Go to the site, enter the group's codeword, then tap your name or join with your name (email optional). The device remembers you after that
 2. Add wish list items (title, optional URL, optional price) or choose "secret surprise" to skip the list
 3. After the draw, open the personal link to see the giftee's name and wish list
 4. Receive reminders by email until the gift date
@@ -50,7 +50,7 @@ Two roles, both without accounts: the **admin** (creates the group, holds a priv
 | ID | Area | Requirement |
 | --- | --- | --- |
 | F1 | Groups | Admin creates a group with name, gift date, budget (GBP only, min, max) and an optional message |
-| F2 | Invites | Shareable invite link per group; admin can also add people by email; a group has 3 to 50 participants |
+| F2 | Invites | Organiser picks a codeword to share (unique, case and spacing ignored, changeable); the old invite link still works; admin can also add people by email; a group has 3 to 50 participants |
 | F3 | Identity | No passwords: each person gets a unique, unguessable magic link by email, which can be re-sent |
 | F4 | Wish lists | Each participant adds, edits, reorders and deletes items: title, optional URL, optional price; a participant can instead choose "secret surprise" to skip the list. Lists stay editable after the draw and the giver is emailed when their giftee changes it |
 | F5 | Budget check | Items with a price above the group's maximum show a warning to the giftee; the giver sees the flag too |

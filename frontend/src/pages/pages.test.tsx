@@ -37,6 +37,7 @@ describe('CreateGroupPage', () => {
     await userEvent.type(screen.getByLabelText('Gift exchange date'), future)
     await userEvent.type(screen.getByLabelText('Min budget (£)'), '15')
     await userEvent.type(screen.getByLabelText('Max budget (£)'), '25.50')
+    await userEvent.type(screen.getByLabelText('Codeword for friends'), 'Dunlop Xmas')
     await userEvent.type(screen.getByLabelText('Your name'), 'Sam')
     await userEvent.type(screen.getByLabelText('Your email'), 'sam@example.com')
     expect(screen.getByLabelText("I'm taking part too")).toBeChecked()
@@ -44,7 +45,8 @@ describe('CreateGroupPage', () => {
 
     expect(await screen.findByText('Your group is ready')).toBeInTheDocument()
     const body = JSON.parse(fetch.mock.calls[0][1]!.body as string)
-    expect(body).toMatchObject({ budget_min: 1500, budget_max: 2550, admin_participates: true, message: null })
+    expect(body).toMatchObject({ budget_min: 1500, budget_max: 2550, admin_participates: true, message: null, codeword: 'Dunlop Xmas' })
+    expect(screen.getByText('Dunlop Xmas')).toBeInTheDocument()
     expect(screen.getByText('localhost:5173/g/ADMIN')).toBeInTheDocument()
     expect(screen.queryByText(/\/p\//)).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Go to your group' })).toHaveAttribute('href', '/g/ADMIN')
@@ -62,6 +64,7 @@ const adminGroup: AdminGroup = {
   admin_name: 'Sam',
   draw_status: 'not_drawn',
   days_to_go: 49,
+  codeword: 'jingle bells',
   invite_link: 'https://secretsanta.dunlopdev.com/join/k3x9',
   drawn_at: null,
   show_exclusions: false,
@@ -74,14 +77,15 @@ const adminGroup: AdminGroup = {
 }
 
 describe('DashboardPage', () => {
-  it('renders the group, invite link and statuses', async () => {
+  it('renders the group, codeword and statuses', async () => {
     const fetch = mockFetch(() => ({ body: adminGroup }))
     renderAt('/g/TOKEN', [{ path: '/g/:adminToken', element: <DashboardPage /> }])
 
     expect(await screen.findByRole('heading', { name: 'Family Secret Santa' })).toBeInTheDocument()
     expect(screen.getByText('Gift swap 20 Dec 2026 · Budget £15 to £25')).toBeInTheDocument()
     expect(screen.getByText('49 days to go')).toBeInTheDocument()
-    expect(screen.getByText('secretsanta.dunlopdev.com/join/k3x9')).toBeInTheDocument()
+    expect(screen.getByText('jingle bells')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Change' })).toBeInTheDocument()
     expect(screen.getByText('3 people')).toBeInTheDocument()
     expect(screen.getByText("2 pairs can't be matched")).toBeInTheDocument()
 
@@ -116,7 +120,7 @@ describe('JoinPage', () => {
     )
     renderAt('/join/INV', routes)
     await userEvent.type(await screen.findByLabelText('Your name'), 'Alex')
-    await userEvent.type(screen.getByLabelText('Your email'), 'alex@example.com')
+    await userEvent.type(screen.getByLabelText('Email (optional)'), 'alex@example.com')
     await userEvent.click(screen.getByRole('button', { name: 'Join this Secret Santa' }))
     expect(await screen.findByText('Wish list page')).toBeInTheDocument()
   })
@@ -144,7 +148,7 @@ describe('JoinPage', () => {
     expect(screen.getByText('One gift each.')).toBeInTheDocument()
 
     await userEvent.type(screen.getByLabelText('Your name'), 'Alex')
-    await userEvent.type(screen.getByLabelText('Your email'), 'alex@example.com')
+    await userEvent.type(screen.getByLabelText('Email (optional)'), 'alex@example.com')
     await userEvent.click(screen.getByRole('button', { name: 'Join this Secret Santa' }))
 
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument()
@@ -166,7 +170,7 @@ describe('JoinPage', () => {
     )
     renderAt('/join/INV', routes)
     await userEvent.type(await screen.findByLabelText('Your name'), 'Alex')
-    await userEvent.type(screen.getByLabelText('Your email'), 'alex@example.com')
+    await userEvent.type(screen.getByLabelText('Email (optional)'), 'alex@example.com')
     await userEvent.click(screen.getByRole('button', { name: 'Join this Secret Santa' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('This group is full')
   })

@@ -5,7 +5,7 @@ import { api, ApiError, type AdminGroup, type Bottleneck, type ParticipantSummar
 import { describeCheck } from '../bottleneck'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Confetti } from '../components/Confetti'
-import { CopyLink } from '../components/CopyLink'
+import { CodewordCard } from '../components/Codeword'
 import { Field } from '../components/Field'
 import { HeaderBand } from '../components/HeaderBand'
 import { PeopleCard } from '../components/People'
@@ -90,7 +90,7 @@ export function DashboardPage() {
   })
   const add = useMutation({
     mutationFn: ({ name, email, confirm }: { name: string; email: string; confirm: boolean }) =>
-      api(`/groups/${groupId}/participants`, { method: 'POST', token, body: { name, email, confirm_redraw: confirm } }),
+      api(`/groups/${groupId}/participants`, { method: 'POST', token, body: { name, email: email || null, confirm_redraw: confirm } }),
     onSuccess: async () => {
       setPending(null)
       setNewName('')
@@ -113,7 +113,7 @@ export function DashboardPage() {
     const email = newEmail.trim()
     const errors = {
       name: name ? undefined : 'Enter a name',
-      email: EMAIL_RE.test(email) ? undefined : 'Enter a valid email',
+      email: !email || EMAIL_RE.test(email) ? undefined : 'Enter a valid email',
     }
     setAddErrors(errors)
     if (errors.name || errors.email) return
@@ -185,7 +185,7 @@ export function DashboardPage() {
               <form className="add-person" onSubmit={submitAdd} noValidate aria-label="Add someone">
                 <div className="grid-2">
                   <Field label="Name" value={newName} maxLength={60} onChange={(e) => setNewName(e.target.value)} error={addErrors.name} />
-                  <Field label="Email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} error={addErrors.email} />
+                  <Field label="Email (optional)" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} error={addErrors.email} />
                 </div>
                 {add.error && !pending && (
                   <p className="alert" role="alert" style={{ margin: 0 }}>
@@ -200,7 +200,13 @@ export function DashboardPage() {
           </div>
           <div className="layout__side">
             <div className="m-first">
-              <CopyLink label="Invite link" url={group.invite_link} />
+              <CodewordCard
+                codeword={group.codeword}
+                onChange={async (codeword) => {
+                  await api(`/groups/${group.id}`, { method: 'PATCH', token, body: { codeword } })
+                  await refresh()
+                }}
+              />
             </div>
             {me && drawn && (
               <Link className="btn btn--main btn--block m-first" to={`/g/${token}/giftee`}>

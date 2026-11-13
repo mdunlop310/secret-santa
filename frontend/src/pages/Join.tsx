@@ -7,7 +7,7 @@ import { HeaderBand } from '../components/HeaderBand'
 import { ErrorState, LoadingPage, MessagePage } from '../components/States'
 import { formatBudget, formatDate } from '../format'
 
-type JoinBody = { name: string; email: string }
+type JoinBody = { name: string; email: string | null }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -37,11 +37,11 @@ export function JoinPage() {
     e.preventDefault()
     const next = {
       name: name.trim() ? undefined : 'Enter your name',
-      email: EMAIL_RE.test(email.trim()) ? undefined : 'Enter a valid email',
+      email: !email.trim() || EMAIL_RE.test(email.trim()) ? undefined : 'Enter a valid email',
     }
     setErrors(next)
     if (next.name || next.email) return
-    const body = { name: name.trim(), email: email.trim() }
+    const body = { name: name.trim(), email: email.trim() || null }
     join.mutate(body, {
       onSuccess: (result) => {
         // New people go straight to their wish list. If the email is already in the
@@ -75,7 +75,7 @@ export function JoinPage() {
           </p>
         )}
         <Field label="Your name" placeholder="How the group knows you" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} maxLength={60} />
-        <Field label="Your email" type="email" placeholder="you@email.com" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
+        <Field label="Email (optional)" type="email" placeholder="For reminders" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
         {join.error && (
           <p className="alert" role="alert" style={{ margin: 0 }}>
             {join.error.message}

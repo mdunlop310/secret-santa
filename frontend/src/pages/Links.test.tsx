@@ -142,6 +142,7 @@ describe("the organiser's wish list", () => {
 describe("the organiser's dashboard", () => {
   const group: AdminGroup = {
     ...me.group,
+    codeword: 'jingle bells',
     invite_link: 'http://localhost:5173/join/INV',
     drawn_at: '2026-11-03T10:00:00Z',
     show_exclusions: false,

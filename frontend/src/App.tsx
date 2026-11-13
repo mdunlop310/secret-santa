@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { NotFoundPage } from './components/States'
 import { CreateGroupPage } from './pages/CreateGroup'
 import { DashboardPage } from './pages/Dashboard'
+import { EnterPage } from './pages/Enter'
 import { ExclusionsPage } from './pages/Exclusions'
 import { GifteePage } from './pages/Giftee'
 import { GroupDeletedPage, LeftPage, UnsubscribePage } from './pages/Unsubscribe'
@@ -12,7 +13,7 @@ import { WishListPage } from './pages/WishList'
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<CreateGroupPage />} />
+      <Route path="/" element={<EnterPage />} />
       <Route path="/new" element={<CreateGroupPage />} />
       <Route path="/g/:adminToken" element={<DashboardPage />} />
       <Route path="/g/:adminToken/exclusions" element={<ExclusionsPage />} />

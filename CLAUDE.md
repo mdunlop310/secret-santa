@@ -1,6 +1,6 @@
 # Secret Santa: project instructions
 
-Free, ad-free Secret Santa web app. No user accounts: people act through private link tokens. Read `docs/SPEC.md` for behaviour and `docs/DESIGN.md` for visuals before changing anything substantial.
+Free, ad-free Secret Santa web app. No user accounts: friends get in with the group's codeword and tap their name; behind that, people act through private link tokens. Read `docs/SPEC.md` for behaviour and `docs/DESIGN.md` for visuals before changing anything substantial.
 
 ## Layout
 
@@ -13,6 +13,7 @@ Free, ad-free Secret Santa web app. No user accounts: people act through private
 - Secrecy is the product. No endpoint, log line, error message, email or test fixture may reveal the full list of who has whom. A giver's request returns only their own giftee. Admin endpoints never return assignments.
 - Tokens (admin, participant) are `secrets.token_urlsafe(16)` or longer, stored as SHA-256 hashes, compared in constant time, and never logged. The invite token is stored in plain text because the admin needs to see it.
 - One link per person: the organiser's admin link is also their own participant link when they take part, so it may show their own giftee and nothing more. Admin endpoints still never return assignments.
+- Codewords are chosen by the organiser, unique across live groups, and matched ignoring case, spaces and punctuation. Anyone with the codeword can pick any name: that's the owner's chosen trust model. So the codeword routes return names only, every attempt counts toward a per-IP rate limit, and picking a name never gives admin access. Names are unique within a group. Email is optional for participants.
 - Emails carry signed `/open/` links (HMAC, with expiry), never raw tokens. Opening one issues an extra random token in `link_tokens`, so older links keep working. Lost-link emails expire after 24 hours; the rest last until the group is deleted.
 - Money is stored in minor units (pence), GBP only.
 - Fetching a URL for link previews must block private, loopback and link-local addresses, follow few redirects, and enforce size and time limits.

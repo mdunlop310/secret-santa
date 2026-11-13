@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type GroupCreate, type GroupCreated } from '../api'
+import { CodewordCard, codewordError } from '../components/Codeword'
 import { CopyLink } from '../components/CopyLink'
 import { Field, TextAreaField } from '../components/Field'
 import { HeaderBand } from '../components/HeaderBand'
@@ -15,6 +16,7 @@ type Form = {
   budget_min: string
   budget_max: string
   message: string
+  codeword: string
   admin_name: string
   admin_email: string
   admin_participates: boolean
@@ -28,6 +30,7 @@ const EMPTY: Form = {
   budget_min: '',
   budget_max: '',
   message: '',
+  codeword: '',
   admin_name: '',
   admin_email: '',
   admin_participates: true,
@@ -43,6 +46,8 @@ export function validate(form: Form): { errors: Errors; payload?: GroupCreate } 
   if (min === null) errors.budget_min = 'Enter an amount, like 15'
   if (max === null) errors.budget_max = 'Enter an amount, like 25'
   else if (min !== null && max < min) errors.budget_max = 'Must be at least the min'
+  const codewordProblem = codewordError(form.codeword)
+  if (codewordProblem) errors.codeword = codewordProblem
   if (!form.admin_name.trim()) errors.admin_name = 'Enter your name'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.admin_email.trim())) errors.admin_email = 'Enter a valid email'
   if (Object.keys(errors).length > 0) return { errors }
@@ -54,6 +59,7 @@ export function validate(form: Form): { errors: Errors; payload?: GroupCreate } 
       budget_min: min!,
       budget_max: max!,
       message: form.message.trim() || null,
+      codeword: form.codeword.trim(),
       admin_name: form.admin_name.trim(),
       admin_email: form.admin_email.trim(),
       admin_participates: form.admin_participates,
@@ -73,7 +79,7 @@ export function CreateGroupPage() {
   })
   const saved = useSavedGroups()
 
-  if (create.data) return <GroupCreatedView created={create.data} />
+  if (create.data && create.variables) return <GroupCreatedView created={create.data} codeword={create.variables.codeword} />
 
   const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }))
@@ -107,6 +113,7 @@ export function CreateGroupPage() {
           <Field label="Max budget (£)" inputMode="decimal" placeholder="25" value={form.budget_max} onChange={set('budget_max')} error={errors.budget_max} />
         </div>
         <TextAreaField label="Message to the group (optional)" placeholder="Rules, theme, where to meet..." value={form.message} onChange={set('message')} maxLength={500} />
+        <Field label="Codeword for friends" placeholder="e.g. dunlop xmas" autoComplete="off" autoCapitalize="none" spellCheck={false} value={form.codeword} onChange={set('codeword')} error={errors.codeword} maxLength={40} />
         <h2 className="divider-heading" style={{ margin: '2px 0 0' }}>
           About you
         </h2>
@@ -145,16 +152,16 @@ export function CreateGroupPage() {
   )
 }
 
-function GroupCreatedView({ created }: { created: GroupCreated }) {
+function GroupCreatedView({ created, codeword }: { created: GroupCreated; codeword: string }) {
   const adminPath = new URL(created.admin_link).pathname
   return (
     <main className="page page--narrow">
       <HeaderBand aside="Step 2 of 2">
         <h1 className="band__title">Your group is ready</h1>
-        <p className="band__facts">We've emailed you this link too.</p>
       </HeaderBand>
       <div className="content">
-        <CopyLink label="Your link" url={created.admin_link} />
+        <CodewordCard codeword={codeword} />
+        <CopyLink label="Your organiser link" url={created.admin_link} />
         <Link className="btn btn--primary btn--block" to={adminPath}>
           Go to your group
         </Link>
