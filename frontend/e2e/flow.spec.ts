@@ -2,6 +2,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test'
 
 const MAILPIT = process.env.MAILPIT_URL ?? 'http://localhost:8025'
 const run = Math.random().toString(36).slice(2, 8)
+const codeword = `e2e ${run}`
 const email = (name: string) => `e2e-${run}-${name.toLowerCase()}@example.com`
 
 type MailSummary = { ID: string; Subject: string; To: { Address: string }[] }
@@ -41,13 +42,15 @@ test('create, join, wish lists, exclusions, draw and reveal', async ({ browser }
   await admin.getByLabel('Gift exchange date').fill(isoInDays(30))
   await admin.getByLabel('Min budget (£)').fill('15')
   await admin.getByLabel('Max budget (£)').fill('25')
+  await admin.getByLabel('Codeword for friends').fill(codeword)
   await admin.getByLabel('Your name').fill('Sam')
   await admin.getByLabel('Your email').fill(email('Sam'))
   await expect(admin.getByLabel("I'm taking part too")).toBeChecked()
   const created = admin.waitForResponse((r) => r.url().endsWith('/groups') && r.request().method() === 'POST')
   await admin.getByRole('button', { name: 'Create group' }).click()
-  const links = (await (await created).json()) as { admin_link: string; invite_link: string }
+  const links = (await (await created).json()) as { admin_link: string }
   await expect(admin.getByRole('heading', { name: 'Your group is ready' })).toBeVisible()
+  await expect(admin.getByText(codeword)).toBeVisible()
   await admin.getByRole('link', { name: 'Go to your group' }).click()
   await expect(admin.getByRole('heading', { name: `E2E Santa ${run}` })).toBeVisible()
 
@@ -57,16 +60,22 @@ test('create, join, wish lists, exclusions, draw and reveal', async ({ browser }
   await expect(admin.getByRole('button', { name: 'Leave this Secret Santa' })).toBeHidden()
   await admin.getByRole('link', { name: 'Back to group' }).click()
 
-  // Alex and Priya join from the invite link in their own browsers and land on their lists.
+  // Alex and Priya enter the codeword in their own browsers and join; only Alex gives
+  // an email. They land on their wish lists.
   const people: Record<string, Page> = { Sam: await newPage(browser) }
   await people.Sam.goto(`${new URL(links.admin_link).pathname}/wishlist`)
+  const enterCodeword = async (page: Page, typed: string) => {
+    await page.goto('/')
+    await page.getByLabel('Group codeword').fill(typed)
+    await page.getByRole('button', { name: 'Find my group' }).click()
+    await expect(page.getByRole('heading', { name: `E2E Santa ${run}` })).toBeVisible()
+  }
   for (const name of ['Alex', 'Priya']) {
     const page = await newPage(browser)
-    await page.goto(new URL(links.invite_link).pathname)
-    await expect(page.getByText("You're invited")).toBeVisible()
+    await enterCodeword(page, codeword.toUpperCase().replace(' ', '-'))
     await page.getByLabel('Your name').fill(name)
-    await page.getByLabel('Your email').fill(email(name))
-    await page.getByRole('button', { name: 'Join this Secret Santa' }).click()
+    if (name === 'Alex') await page.getByLabel('Email (optional)').fill(email(name))
+    await page.getByRole('button', { name: 'Join', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Your wish list' })).toBeVisible()
     people[name] = page
   }
@@ -109,7 +118,18 @@ test('create, join, wish lists, exclusions, draw and reveal', async ({ browser }
 
   // Reveal: everyone sees one giftee, never themselves, and the exclusion holds.
   const giftees: Record<string, string> = {}
-  for (const [name, page] of Object.entries(people)) {
+  for (const name of Object.keys(people)) {
+    let page = people[name]
+    if (name === 'Priya') {
+      // On a new device: codeword, then tap her name.
+      const fresh = await newPage(browser)
+      await enterCodeword(fresh, codeword)
+      await expect(fresh.getByRole('button', { name: 'Join', exact: true })).toBeHidden()
+      await fresh.getByRole('button', { name: 'Priya' }).click()
+      await expect(fresh.getByRole('heading', { name: 'Your wish list' })).toBeVisible()
+      await page.close()
+      people[name] = page = fresh
+    }
     if (name === 'Alex') {
       // Straight from the button in the draw email, on a fresh browser.
       const fresh = await newPage(browser)
